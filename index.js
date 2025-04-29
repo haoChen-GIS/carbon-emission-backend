@@ -66,13 +66,22 @@ app.get("/api/emissions", async (req, res) => {
 });
 
 // PostgreSQL 查询接口 用户登陆
+// 正确的 POST 登录接口
 app.post("/api/users/login", async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password } = req.body; // 读取 POST body 中的数据
+
+  if (!username || !password) {
+    return res
+      .status(400)
+      .json({ message: "Username and password are required" });
+  }
+
   try {
     const result = await pgPool.query(
-      "SELECT * FROM user WHERE username = $1 AND password = $2",
+      'SELECT * FROM "user" WHERE username = $1 AND password = $2', // 注意：user表加引号！
       [username, password]
     );
+
     if (result.rows.length > 0) {
       res.json({ message: "Login successful" });
     } else {
