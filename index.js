@@ -65,6 +65,25 @@ app.get("/api/emissions", async (req, res) => {
   }
 });
 
+// PostgreSQL 查询接口 用户登陆
+app.post("/api/users/login", async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    const result = await pgPool.query(
+      "SELECT * FROM user WHERE username = $1 AND password = $2",
+      [username, password]
+    );
+    if (result.rows.length > 0) {
+      res.json({ message: "Login successful" });
+    } else {
+      res.status(401).json({ message: "Invalid credentials" });
+    }
+  } catch (err) {
+    console.error("❌ PostgreSQL login error:", err);
+    res.status(500).send("PostgreSQL error");
+  }
+});
+
 // MongoDB 查询接口
 app.get("/api/mongo-emissions", async (req, res) => {
   const { year, country } = req.query;
