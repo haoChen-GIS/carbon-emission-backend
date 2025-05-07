@@ -1,118 +1,28 @@
-// dual-db-api/index.js
 import express from "express";
 import cors from "cors";
-import pg from "pg";
-import mongoose from "mongoose";
 import dotenv from "dotenv";
+import "./config/db.js";
 
-dotenv.config(); // ✅ 加载 .env 文件
+import usersRoutes from "./routes/usersRoutes.js";
+import carbonEmissionsRoutes from "./routes/carbonEmissionsRoutes.js";
+
+dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const PORT = process.env.PORT || 4000;
-
-// PostgreSQL 连接
-const pgPool = new pg.Pool({
-  connectionString: process.env.POSTGRES_URL,
-});
-
-pgPool
-  .connect()
-  .then(() => console.log("✅ Connected to PostgreSQL"))
-  .catch((err) => console.error("❌ PostgreSQL error:", err));
-
-// MongoDB 连接
-mongoose.connect(process.env.MONGODB_URL, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
-
-mongoose.connection.once("open", () => {
-  console.log("✅ Connected to MongoDB");
-});
-
-// Mongo 模型定义
-const CountryEmission = mongoose.model(
-  "CountryEmission",
-  new mongoose.Schema(
-    {
-      year: Number,
-      country: String,
-      carbon_emission: Number,
-      latitude: Number,
-      longitude: Number,
-    },
-    {
-      collection: "country_emission", // ✅ 显式绑定集合名
-    }
-  )
-);
-
-// PostgreSQL 查询接口
-app.get("/api/emissions", async (req, res) => {
-  const { year, country } = req.query;
-  try {
-    const result = await pgPool.query(
-      "SELECT * FROM country_emission WHERE year = $1 AND country = $2",
-      [year, country]
-    );
-    res.json(result.rows);
-  } catch (err) {
-    console.error("❌ PostgreSQL query error:", err);
-    res.status(500).send("PostgreSQL error");
-  }
-});
-
-// PostgreSQL 查询接口 用户登陆
-// 正确的 POST 登录接口
-app.post("/api/users/login", async (req, res) => {
-  const { username, password } = req.body; // 读取 POST body 中的数据
-
-  if (!username || !password) {
-    return res
-      .status(400)
-      .json({ message: "Username and password are required" });
-  }
-
-  try {
-    const result = await pgPool.query(
-      'SELECT * FROM "user" WHERE username = $1 AND password = $2', // 注意：user表加引号！
-      [username, password]
-    );
-
-    if (result.rows.length > 0) {
-      res.json({ message: "Login successful" });
-    } else {
-      res.status(401).json({ message: "Invalid credentials" });
-    }
-  } catch (err) {
-    console.error("❌ PostgreSQL login error:", err);
-    res.status(500).send("PostgreSQL error");
-  }
-});
-
-// MongoDB 查询接口
-app.get("/api/mongo-emissions", async (req, res) => {
-  const { year, country } = req.query;
-  try {
-    const query = {};
-    if (year) query.year = Number(year);
-    if (country) query.country = country;
-    const result = await CountryEmission.find(query);
-    res.json(result);
-  } catch (err) {
-    console.error("❌ MongoDB query error:", err);
-    res.status(500).send("MongoDB error");
-  }
-});
-
-// 测试接口
 app.get("/", (req, res) => {
-  res.send("🚀 Dual DB API is running");
+  res.send("🚀 PostgreSQL API is running");
 });
 
+// 用户相关接口
+app.use("/api/users", usersRoutes);
+
+// 碳排放查询接口
+app.use("/api/emissions", carbonEmissionsRoutes);
+
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://:${PORT}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
