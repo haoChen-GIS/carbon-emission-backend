@@ -1,19 +1,19 @@
 import {
-  getEmissionByYearAndCountry,
-  getEmissionsByCountry,
+  getEmissionByYearAndEntity,
+  getEmissionsByEntity,
   getTopNEmissionsByYear,
 } from "../models/emissionModel.js";
 
 // 查询碳排放
-// /api/emissions?year=2022&country=China
+// /api/emissions?year=2022&entity=China
 export const getEmissions = async (req, res) => {
-  const { year, country } = req.query;
-
-  if (!year || !country)
-    return res.status(400).json({ message: "Year and country are required" });
+  const { year, entity } = req.query;
+  console.log("query params2:", { year, entity });
+  if (!year || !entity)
+    return res.status(400).json({ message: "Year and entity are required" });
 
   try {
-    const emissions = await getEmissionByYearAndCountry(year, country);
+    const emissions = await getEmissionByYearAndEntity(year, entity);
     res.json(emissions);
   } catch (err) {
     console.error("❌ Emission query error:", err.message);
@@ -21,18 +21,18 @@ export const getEmissions = async (req, res) => {
   }
 };
 
-//通过国家名称查询碳排放
-// /api/emissions/:country
-export const getEmissionsByCountryHandler = async (req, res) => {
-  const { country } = req.params;
+//通过实体名称查询碳排放
+// /api/emissions/:entity
+export const getEmissionsByEntityHandler = async (req, res) => {
+  const { entity } = req.params;
 
   try {
-    const emissions = await getEmissionsByCountry(country);
+    const emissions = await getEmissionsByEntity(entity);
 
     if (!emissions || emissions.length === 0) {
       return res
         .status(404)
-        .json({ message: "No emissions found for this country" });
+        .json({ message: "No emissions found for this country or area" });
     }
 
     res.json({ emissions });

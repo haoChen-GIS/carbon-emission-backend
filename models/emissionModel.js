@@ -2,23 +2,29 @@
 import supabase from "../config/db.js";
 
 // 查询碳排放数据 by 年份和国家
-export const getEmissionByYearAndCountry = async (year, country) => {
+export const getEmissionByYearAndEntity = async (year, entity) => {
+  console.log("查询参数:", { year, entity });
   const { data, error } = await supabase
-    .from("country_emission")
+    .from("carbon_emissions_entity")
     .select("*")
-    .eq("year", year)
-    .eq("country", country);
+    .eq("year", year) // ✅ 强制转换为数字
+    .eq("entity", entity); // ✅ 去除可能的空格
 
-  if (error) throw error;
+  if (error) {
+    console.error("Supabase query error:", error.message);
+    throw error;
+  }
+
+  console.log("📊 query results:", data); // ✅ 打印调试
   return data;
 };
 
 // 通过国家名称查询碳排放
-export const getEmissionsByCountry = async (country) => {
+export const getEmissionsByEntity = async (entity) => {
   const { data, error } = await supabase
-    .from("country_emission")
+    .from("carbon_emissions_entity")
     .select("*")
-    .eq("country", country)
+    .eq("entity", entity)
     .order("year", { ascending: true });
 
   if (error) throw new Error(error.message);
@@ -28,7 +34,7 @@ export const getEmissionsByCountry = async (country) => {
 // 查询某年 Top N 排放国家
 export const getTopNEmissionsByYear = async (year, n) => {
   const { data, error } = await supabase
-    .from("country_emission")
+    .from("carbon_emissions_coordinates")
     .select("*")
     .eq("year", year)
     .not("carbon_emission", "is", null) // ✅ 过滤掉空值
